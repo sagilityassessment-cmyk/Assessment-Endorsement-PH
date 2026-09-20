@@ -92,9 +92,13 @@ const unlock = () => {
   window.dispatchEvent(new Event('portalUnlocked'));
 };
 
-const lock = () => {
+const lock = (redirectToLocationChooser = false) => {
   sessionStorage.removeItem(sessionKey);
   sessionStorage.removeItem(sessionStartedKey);
+  if (redirectToLocationChooser) {
+    window.location.replace('../../index.html');
+    return;
+  }
   document.body.classList.add('portal-locked');
   document.documentElement.classList.add('portal-login-locked');
   if (!document.querySelector('#portalLoginView')) window.location.reload();
@@ -134,7 +138,7 @@ document.querySelector('#portalResetPassword')?.addEventListener('click', async 
 
 document.querySelector('.logout')?.addEventListener('click', async () => {
   await signOut(auth).catch(() => {});
-  lock();
+  lock(true);
 });
 
 document.querySelector('#adminLogoutLink')?.addEventListener('click', async (event) => {
@@ -144,7 +148,7 @@ document.querySelector('#adminLogoutLink')?.addEventListener('click', async (eve
     console.error('Global logout signal failed', error);
   });
   await signOut(auth).catch(() => {});
-  lock();
+  lock(true);
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -154,9 +158,9 @@ onAuthStateChanged(auth, (user) => {
   stopGlobalLogoutListener = onSnapshot(sessionDocument, (snapshot) => {
     const logoutAt = snapshot.data()?.logoutAt?.toMillis?.() || 0;
     const sessionStarted = Number(sessionStorage.getItem(sessionStartedKey) || 0);
-    if (logoutAt > sessionStarted) {
+    if (sessionStarted > 0 && logoutAt > sessionStarted) {
       signOut(auth).catch(() => {});
-      lock();
+      lock(true);
     }
   }, (error) => console.error('Global logout listener failed', error));
 });
